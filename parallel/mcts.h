@@ -23,7 +23,7 @@ struct MCTS
   Node* selectBestChild(Node* node);
   Node* select(Node* node);
 
-  void threadRun(Board& b, uint_fast8_t child, uint_fast16_t iter = UINT_FAST16_MAX);
+  void threadRun(uint_fast8_t child, uint_fast16_t iter = UINT_FAST16_MAX);
   void backpropogate(Node* node, float reward);
   void expand(Node* node);
 };
@@ -31,6 +31,7 @@ struct MCTS
 struct Node
 {
   bool terminal;
+  bool expanded;
   float uctScore = 0.0;
   uint8_t inserted = 0;
   int_fast32_t score = 0; // wins, draws, losses

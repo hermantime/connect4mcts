@@ -5,19 +5,22 @@
 int main()
 {
   Board b(true);
-   
+
   while (!b.isDraw() && !b.checkWin())
   {
     int move;
     std::cin >> move;
     b.dropPiece(move);
     b.printBoard();
-    std::cout << "\n"; 
+    std::cout << "\n";
+
+    if (b.isDraw() || b.checkWin())
+      break;
 
     MCTS m;
     move = m.run(b);
     b.dropPiece(move);
-    b.printBoard();   
+    b.printBoard();
     std::cout << "\n";
   }
 

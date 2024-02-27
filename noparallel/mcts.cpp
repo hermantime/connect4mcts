@@ -56,6 +56,7 @@ Node* MCTS::selectBestChild(Node* node)
         best = node->children[i];
     }
   }
+  assert(best != nullptr);
   return best;
 }
 
@@ -63,7 +64,7 @@ Node* MCTS::select(Node* node)
 {
   if (node->inserted == moves) // expand current tree
   {
-    while (node->inserted != 0) // find leaf node
+    while (node->inserted != 0) // find leaf node node is null b/c there is a full column here
     {
       node = selectBestChild(node);
     }
@@ -77,9 +78,10 @@ void MCTS::backpropogate(Node* node, float reward)
   {
     node->visits++;
     node->score += reward;
+    reward *= -1;
     if (node->root != nullptr)
     {
-      float UCT = 1.0 * node->score / node->visits + sqrt(2)
+      float UCT = 1.0 * node->score / node->visits + (2 - sqrt(2))
                 * sqrt(2*log(node->root->visits) / node->visits);
       node->uctScore = UCT;
     }

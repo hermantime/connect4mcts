@@ -61,7 +61,7 @@ Node* MCTS::selectBestChild(Node* node)
 
 Node* MCTS::select(Node* node)
 {
-  if (node->inserted == moves) // expand current tree
+  if (node->expanded)
   {
     while (node->inserted != 0) // find leaf node
     {
@@ -71,15 +71,16 @@ Node* MCTS::select(Node* node)
   return node;
 }
 
-void MCTS::backpropogate(Node* node, float reward)
-{
+void MCTS::backpropogate(Node* node, float reward) // machine win -> increment machine, decrement human
+{                                                  // human win -> decrement machine, increment human
   while (node != nullptr)
   {
     node->visits++;
     node->score += reward;
+    reward *= -1;
     if (node->root != nullptr)
     {
-      float UCT = 1.0 * node->score / node->visits + sqrt(2)
+      float UCT = 1.0 * node->score / node->visits + (2-sqrt(2))
                 * sqrt(2*log(node->root->visits) / node->visits);
       node->uctScore = UCT;
     }
@@ -94,20 +95,26 @@ uint_fast8_t MCTS::run(Board& b, uint_fast16_t iter)
   expand(selected);
 
   for (uint_fast8_t i = 0; i < moves; ++i)
-    workers[i] = std::thread([&, i](){threadRun(root->children[i]->b, i);});
+    if (root->children[i] != nullptr)
+      workers[i] = std::thread([&, i](){threadRun(i);});
 
   for (uint_fast8_t i = 0; i < moves; ++i)
-    workers[i].join();
+    if (root->children[i] != nullptr)
+      workers[i].join();
 
   uint_fast8_t move = selectBestChild(root)->simulatedMove;
   delete root;
   return move;
 }
 
-void MCTS::threadRun(Board& b, uint_fast8_t child, uint_fast16_t iter)
+void MCTS::threadRun(uint_fast8_t child, uint_fast16_t iter)
 {
-  Node* selected = select(root->children[child]);
-  expand(selected);
+  for (uint_fast16_t i = 0; i < iter/moves; ++i)
+  {
+    assert(root->children[child] != nullptr);
+    Node* selected = select(root->children[child]);
+    expand(selected);
+  }
 }
 
 // take into account for terminal state!!!!
@@ -132,5 +139,6 @@ void MCTS::expand(Node* node)
       int_fast8_t res = simulate(newNode);
       backpropogate(newNode, res);
     }
+    node->expanded = true;
   }
 }
