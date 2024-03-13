@@ -50,10 +50,21 @@ Node* MCTS::select(Node* node, Node*& spare)
   if (!node->expanded)
     return node;
 
+  int cnt = 0;
   float UCT;
   Node* temproot = node;
   while (node->expanded) // this is nullptr, better conditionals
   {
+    if (cnt == 300)
+    {
+      std::cout << "sel\n";
+      printT(temproot);
+      std::cout << '\n';
+      assert(node != nullptr);
+      printT(node);
+      assert(cnt != 300);
+    }
+    cnt++;
     Node* best;
     UCT = -INFINITY;
     for (uint_fast8_t i = 0; i < cols; ++i)
@@ -89,22 +100,28 @@ Node* MCTS::select(Node* node, Node*& spare)
 
 Node* MCTS::expand(Node* node)
 {
-  if (node->expanded)
-  {
-    node->b.printBoard();
-    printT(root);
-    std::cout << "\n";
-    printT(node);
-  }
   assert(!node->terminal);
   assert(!node->expanded);
   xoroshiro128plus prng;
   uint_fast8_t move;
+  int i = 0;
   do
   {
+    i++;
     move = prng.next() % cols;
   }
-  while (node->moves[move]);
+  while (node->moves[move] && i != 200);
+  if (i == 200)
+  {
+    std::cout << "exp\n";
+    node->b.printBoard();
+    printT(root);
+    std::cout << "\n";
+    printT(node);
+    std::cout << "\n";
+    assert(i != 200);
+  }
+  //createdNodes++; wow something as simple as this can create a datarace!
   Node* newNode = new Node();
   if (node->b.legalMove(move))
   {
@@ -135,17 +152,21 @@ int_fast16_t MCTS::simulate(Node* node, uint_fast32_t iter)
   int_fast16_t score = 0;
   for (uint_fast16_t i = 0; i < iter; ++i)
   {
+    int cnt = 0;
     Board copy(node->b);
     xoroshiro128plus prng;
     while (!copy.isDraw() && !copy.isWin())
     {
       uint_fast8_t move;
+      assert(!copy.isDraw());
       do
       {
         move = prng.next() % cols;
       }
       while (!copy.legalMove(move));
       copy.dropPiece(move);
+      assert(cnt != 43);
+      cnt++;
     }
     score += copy.state;
   }
@@ -160,8 +181,10 @@ float MCTS::calcUCT(Node* node)
 
 void MCTS::backpropagate(Node* node, float reward)
 {
+  int cnt = 0;
   while (node) // != nullptr
   {
+    assert(cnt != 200);
     node->visits++;
     if (node->root)
     {
@@ -170,6 +193,7 @@ void MCTS::backpropagate(Node* node, float reward)
       reward *= reward == -INFINITY ? 1 : -1;
     }
     node = node->root;
+    cnt++;
   }
 }
 
@@ -198,7 +222,13 @@ uint_fast8_t MCTS::run(uint_fast16_t iter)
   // expand base 7 children
   for (uint_fast8_t i = 0; i < cols; ++i)
     expand(root);
-
+  /*
+  for (int i = 0; i < cols; ++i)
+  {
+    std::cout << root->children[i]->terminal << "@" << (int) root->children[i]->move << " ";
+  }
+  std::cout << "\n";
+   */
   for (uint_fast8_t i = 0; i < cols; ++i)
   {
     if (!root->children[i]->terminal)
@@ -211,8 +241,10 @@ uint_fast8_t MCTS::run(uint_fast16_t iter)
     if (workers[i].joinable())
     {
       workers[i].join();
-      root->children[i]->root = root;
     }
+
+  for (uint_fast8_t i = 0; i < cols; ++i)
+    root->children[i]->root = root; // switching these two lines prevented a data race?
 
   return bestMove(root);
 }

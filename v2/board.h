@@ -17,9 +17,9 @@ struct Board
   bool turn = false;
   bool ogTurn = false; // original turn
 
-  int_fast8_t state = 0; // 1 is win, 0 is draw, -1 is loss
+  int_fast8_t state; // 1 is win, 0 is draw, -1 is loss
   uint_fast8_t totalMoves = 0;
-  uint_fast8_t lastMove = -1; // will have been done by !turn
+  uint_fast8_t lastMove; // will have been done by !turn
   std::bitset<84> board;
 
   void printBoard();

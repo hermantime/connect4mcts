@@ -3,21 +3,6 @@
 #include <cstdint>
 #include <iostream>
 
-Board::Board() = default;
-Board::Board(const Board& other)
-  : turn(other.turn), ogTurn(other.ogTurn), state(other.state),
-  totalMoves(other.totalMoves), lastMove(other.lastMove) , board(other.board) {}
-Board& Board::operator=(const Board& other)
-{
-  turn = other.turn;
-  ogTurn = other.ogTurn;
-  state = other.state;
-  totalMoves = other.totalMoves;
-  lastMove = other.lastMove;
-  board = other.board;
-  return *this;
-}
-
 void Board::printBoard()
 {
   for (uint_fast8_t i = 0; i < size; ++i)
@@ -26,7 +11,6 @@ void Board::printBoard()
     if ((i+1) % cols == 0)
       std::cout << "\n";
   }
-  std::cout << "\n";
 }
 // guaranteed no error, get moves from getLegalMoves
 void Board::dropPiece(int_fast8_t col)
@@ -40,7 +24,6 @@ void Board::dropPiece(int_fast8_t col)
       board[(col+35)*2] = !turn ? 0 : 1;
       board[(col+35)*2+1] = !turn ? 1 : 0;
       lastMove = col+35;
-      state = turn == ogTurn ? 1 : -1;
       turn = !turn;
       return;
     }
@@ -51,17 +34,7 @@ void Board::dropPiece(int_fast8_t col)
 
 bool Board::isDraw()
 {
-  bool cond =  (totalMoves == size);
-  if (cond)
-    state = 0;
-  return cond;
-}
-
-// true => spot open
-// false => spot taken
-bool Board::legalMove(uint_fast8_t move)
-{
-  return !getPiece(move);
+  return totalMoves == size;
 }
 
 bool Board::validIndex(int_fast8_t dx, int_fast8_t dy)
@@ -101,6 +74,7 @@ bool Board::checkConsecutive(int_fast8_t dx, int_fast8_t dy)
 
 bool Board::isWin()
 {
+  state = turn == ogTurn ? 1 : -1;
   return checkConsecutive(0, 1) || checkConsecutive(1, 0) ||
          checkConsecutive(1, 1) || checkConsecutive(-1, 1);
 }
@@ -110,4 +84,16 @@ int_fast8_t Board::getPiece(uint_fast8_t idx, int_fast8_t dx, int_fast8_t dy)
 {
   int_fast8_t newIdx = ((idx / cols + dx) * cols + ((idx % cols) + dy));
   return (board[newIdx * 2] << 1) + board[newIdx * 2 + 1];
+}
+
+uint_fast8_t Board::randomLegalMove()
+{
+  assert(!isDraw());
+  uint_fast8_t move;
+  do
+  {
+    move = (std::rand() % 7);
+  }
+  while (getPiece(move)); // want a spot where move == 0
+  return move;
 }

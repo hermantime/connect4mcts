@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include "xoroshiro128plus.h"
 
 Board::Board() = default;
 Board::Board(const Board& other)
@@ -40,7 +41,6 @@ void Board::dropPiece(int_fast8_t col)
       board[(col+35)*2] = !turn ? 0 : 1;
       board[(col+35)*2+1] = !turn ? 1 : 0;
       lastMove = col+35;
-      state = turn == ogTurn ? 1 : -1;
       turn = !turn;
       return;
     }
@@ -51,10 +51,7 @@ void Board::dropPiece(int_fast8_t col)
 
 bool Board::isDraw()
 {
-  bool cond =  (totalMoves == size);
-  if (cond)
-    state = 0;
-  return cond;
+  return totalMoves == size;
 }
 
 // true => spot open
@@ -101,6 +98,7 @@ bool Board::checkConsecutive(int_fast8_t dx, int_fast8_t dy)
 
 bool Board::isWin()
 {
+  state = turn == ogTurn ? 1 : -1;
   return checkConsecutive(0, 1) || checkConsecutive(1, 0) ||
          checkConsecutive(1, 1) || checkConsecutive(-1, 1);
 }

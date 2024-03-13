@@ -3,21 +3,6 @@
 #include <cstdint>
 #include <iostream>
 
-Board::Board() = default;
-Board::Board(const Board& other)
-  : turn(other.turn), ogTurn(other.ogTurn), state(other.state),
-  totalMoves(other.totalMoves), lastMove(other.lastMove) , board(other.board) {}
-Board& Board::operator=(const Board& other)
-{
-  turn = other.turn;
-  ogTurn = other.ogTurn;
-  state = other.state;
-  totalMoves = other.totalMoves;
-  lastMove = other.lastMove;
-  board = other.board;
-  return *this;
-}
-
 void Board::printBoard()
 {
   for (uint_fast8_t i = 0; i < size; ++i)
@@ -26,7 +11,6 @@ void Board::printBoard()
     if ((i+1) % cols == 0)
       std::cout << "\n";
   }
-  std::cout << "\n";
 }
 // guaranteed no error, get moves from getLegalMoves
 void Board::dropPiece(int_fast8_t col)
@@ -36,11 +20,9 @@ void Board::dropPiece(int_fast8_t col)
     assert(col+35 >= 0); // if not column full
     if (getPiece(col+35) == 0)
     {
-      totalMoves++;
       board[(col+35)*2] = !turn ? 0 : 1;
       board[(col+35)*2+1] = !turn ? 1 : 0;
       lastMove = col+35;
-      state = turn == ogTurn ? 1 : -1;
       turn = !turn;
       return;
     }
@@ -49,19 +31,22 @@ void Board::dropPiece(int_fast8_t col)
   assert(false); // something went wrong
 }
 
-bool Board::isDraw()
+// index 0-41
+int_fast8_t Board::getPiece(uint_fast8_t idx, int_fast8_t dx, int_fast8_t dy)
 {
-  bool cond =  (totalMoves == size);
-  if (cond)
-    state = 0;
-  return cond;
+  int_fast8_t newIdx = ((idx / cols + dx) * cols + ((idx % cols) + dy));
+  return (board[newIdx * 2] << 1) + board[newIdx * 2 + 1];
 }
 
-// true => spot open
-// false => spot taken
-bool Board::legalMove(uint_fast8_t move)
+bool Board::isDraw()
 {
-  return !getPiece(move);
+  uint_fast8_t val = 0;
+  for (uint_fast8_t i = 0; i < cols; ++i)
+  {
+    val += getPiece(i) == 0 ? 0 : 1;
+  }
+  state = 0;
+  return val >= cols;
 }
 
 bool Board::validIndex(int_fast8_t dx, int_fast8_t dy)
@@ -99,15 +84,36 @@ bool Board::checkConsecutive(int_fast8_t dx, int_fast8_t dy)
   return total > 3;
 }
 
-bool Board::isWin()
+bool Board::checkWin()
 {
+  if (lastMove == UINT_FAST8_MAX)
+    return false;
+  state = turn == ogTurn ? 1 : -1;
   return checkConsecutive(0, 1) || checkConsecutive(1, 0) ||
          checkConsecutive(1, 1) || checkConsecutive(-1, 1);
 }
 
-// index 0-41
-int_fast8_t Board::getPiece(uint_fast8_t idx, int_fast8_t dx, int_fast8_t dy)
+// returns bitset where, 0 => cannot drop, 1 => can drop
+std::bitset<Board::cols> Board::legalMoves()
 {
-  int_fast8_t newIdx = ((idx / cols + dx) * cols + ((idx % cols) + dy));
-  return (board[newIdx * 2] << 1) + board[newIdx * 2 + 1];
+  uint_fast8_t cs = 0;
+  for (uint_fast8_t i = 0; i < cols; ++i)
+  {
+    cs = cs * 2 + (getPiece(i) ? 0 : 1);
+  }
+  return std::bitset<cols> (cs);
+}
+
+uint_fast8_t Board::randomLegalMove()
+{
+  assert(!isDraw());
+  std::bitset<cols> moves = legalMoves();
+  assert(!moves.none()); // draw
+  uint_fast8_t move;
+  do
+  {
+    move = std::rand() % cols;
+  }
+  while (moves.to_string()[move] == '0'); // edit, this sucks
+  return move;
 }
