@@ -34,19 +34,19 @@ struct MCTS
   ~MCTS();
 
   Node* root;
-  float EXPL = 0.58578643762690485; // WAY better than sqrt(2)
-  int createdNodes = 0;
+  float EXPL = 0.58578643762690485; // 2-sqrt2, WAY better than sqrt(2)
+  //int createdNodes = 0;
   std::thread workers[cols];
   //uint_fast8_t (*prngs[cols])(); // each thread has its own prng
   // or create/destroy instance of function every time running simluation?
 
   Node* select(Node* node, Node*& spare);
   Node* expand(Node* node);
-  int_fast16_t simulate(Node* node, uint_fast32_t iter = 100);
+  int_fast16_t simulate(Node* node, uint_fast32_t iter, uint_fast8_t simThreads = 1);
   inline float calcUCT(Node* node);
-  void backpropagate(Node* node, float reward);
-  void task(uint_fast32_t iter, uint_fast8_t who);
-  uint_fast8_t run(uint_fast16_t iter);
+  void backpropagate(Node* node, float reward, uint_fast8_t who);
+  void task(uint_fast32_t loopIter, uint_fast32_t simIter, uint_fast8_t simThreads, uint_fast8_t who);
+  uint_fast8_t run(uint_fast32_t loopIter, uint_fast32_t simIter, uint_fast8_t simThreads);
   uint_fast8_t bestMove(Node* node);
 
   // other functions, simulate only next 7 possible moves

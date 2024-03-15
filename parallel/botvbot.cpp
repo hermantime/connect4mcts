@@ -9,7 +9,7 @@ int main()
     do
     {
       MCTS m(b);
-      uint_fast8_t move = m.run(1000);
+      uint_fast8_t move = m.run(5000, 333, 3);
       b.dropPiece(move);
       //b.printBoard();
     }

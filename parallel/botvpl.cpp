@@ -18,12 +18,12 @@ int main()
         break;
 
       MCTS m(b);
-      move = m.run(10000);
+      move = m.run(5000, 333, 3);
       b.dropPiece(move);
       b.printBoard();
     }
     while (!b.isDraw() && !b.isWin());
-    std::cout << (b.state == 1 ? "Nice!\n" : "Aww man!\n");
+    std::cout << (b.state == 1 ? "Nice!\n\n" : "Aww man!\n\n");
   }
 
   return 0;
